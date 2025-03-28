@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from "react-native";
 
 import { Images } from "@/constants/Image";
@@ -19,6 +20,8 @@ import CameraScanner, { CameraScannerRef } from "@/components/ScanCamera";
 import HeartbeatAnimation from "@/components/HeartbeatAnimation";
 import { SOCKET_URL } from "@/constants";
 import { EVENT_CODE, WebsocketResponseType } from "@/types";
+import { useCameraPermissions } from "expo-camera";
+import { Text as PaperText } from "react-native-paper";
 
 export default function HomeScreen() {
   const { width: screenWidth } = useSafeAreaFrame();
@@ -39,7 +42,7 @@ export default function HomeScreen() {
   const [tempSocketUrl, setTempSocketUrl] = useState(socketUrl);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-
+    const [permission, requestPermission] = useCameraPermissions();
   const hideModal = () => {
     setVisible(false);
     setPhotoResult({
@@ -104,6 +107,29 @@ export default function HomeScreen() {
     };
   }, [socketUrl]);
 
+
+  if (!permission?.granted) {
+    return (
+      <View style={styles.container}>
+        <PaperText
+          variant="titleMedium"
+          style={{
+            textAlign: "center",
+            marginHorizontal: 50,
+            marginTop: 50,
+            marginBottom: 30,
+          }}
+        >
+          授权失效或者授权过期，请允许应用程序允许相机权限以扫描二维码
+        </PaperText>
+
+        <Button icon="camera" mode="contained" onPress={requestPermission}>
+          重新获取相机授权
+        </Button>
+      </View>
+    );
+  }
+  
   const webSocketMsgHandle = async (response: string) => {
     try {
       const data: WebsocketResponseType = JSON.parse(response);
@@ -113,7 +139,11 @@ export default function HomeScreen() {
       }
 
       if (data.type === EVENT_CODE.TAKE_PHOTO) {
-        cameraScannerRef.current?.takePhoto();
+        setShowScanner(true);
+
+        setTimeout(() => {
+          cameraScannerRef.current?.takePhoto();
+        }, 500);
         return;
       }
     } catch (e) {
@@ -174,6 +204,8 @@ export default function HomeScreen() {
 
   return (
     <View>
+
+      
       {showScanner ? (
         <CameraScanner
           onCallback={cameraTakePhotoEventCall}
