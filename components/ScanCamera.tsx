@@ -61,23 +61,62 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
     const takePhoto = async () => {
       try {
         if (isCameraReady) {
-          const result = await cameraRef.current?.takePictureAsync();
-
-          if (result?.uri) {
-            onCallback({
-              url: result?.uri,
-              width: result?.width,
-              height: result?.height,
-            });
-            setTimeout(() => {
-              closeCamera();
-            }, 100);
-          }
+          // 相机已经准备好，直接拍照
+          await takePictureAndProcess();
         } else {
-          Alert.alert("相机未ready");
+          // 相机未准备好，开始等待策略
+          Alert.alert("正在等待相机准备...");
+
+          let waitTime = 0;
+          const interval = 500; // 每0.5秒检查一次
+          const maxWaitTime = 5000; // 最多等待5秒
+
+          const waitForCamera = new Promise<boolean>((resolve) => {
+            const checkInterval = setInterval(() => {
+              waitTime += interval;
+
+              if (isCameraReady) {
+                // 相机准备好了
+                clearInterval(checkInterval);
+                resolve(true);
+              } else if (waitTime >= maxWaitTime) {
+                // 超过最大等待时间
+                clearInterval(checkInterval);
+                resolve(false);
+              }
+            }, interval);
+          });
+
+          const isReady = await waitForCamera;
+
+          if (isReady) {
+            // 相机准备好了，可以拍照
+            await takePictureAndProcess();
+          } else {
+            // 等待超时，显示错误并关闭
+            Alert.alert("相机准备超时", "相机在5秒内未能准备就绪");
+            closeCamera();
+          }
         }
       } catch (error) {
-        Alert.alert(JSON.stringify(error));
+        Alert.alert("拍照出错", JSON.stringify(error));
+        closeCamera();
+      }
+    };
+
+    // 将拍照逻辑抽取为独立函数，便于复用
+    const takePictureAndProcess = async () => {
+      const result = await cameraRef.current?.takePictureAsync();
+
+      if (result?.uri) {
+        onCallback({
+          url: result.uri,
+          width: result.width,
+          height: result.height,
+        });
+        setTimeout(() => {
+          closeCamera();
+        }, 100);
       }
     };
 

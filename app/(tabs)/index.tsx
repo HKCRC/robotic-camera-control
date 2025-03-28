@@ -42,7 +42,7 @@ export default function HomeScreen() {
   const [tempSocketUrl, setTempSocketUrl] = useState(socketUrl);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-    const [permission, requestPermission] = useCameraPermissions();
+  const [permission, requestPermission] = useCameraPermissions();
   const hideModal = () => {
     setVisible(false);
     setPhotoResult({
@@ -107,7 +107,6 @@ export default function HomeScreen() {
     };
   }, [socketUrl]);
 
-
   if (!permission?.granted) {
     return (
       <View style={styles.container}>
@@ -129,7 +128,7 @@ export default function HomeScreen() {
       </View>
     );
   }
-  
+
   const webSocketMsgHandle = async (response: string) => {
     try {
       const data: WebsocketResponseType = JSON.parse(response);
@@ -204,8 +203,6 @@ export default function HomeScreen() {
 
   return (
     <View>
-
-      
       {showScanner ? (
         <CameraScanner
           onCallback={cameraTakePhotoEventCall}
