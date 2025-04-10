@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, Text } from "react-native-paper";
 import { Images } from "@/constants/Image";
 import { Image } from "react-native";
-
+import * as MediaLibrary from "expo-media-library";
 interface CameraScannerProps {
   onClose: () => void;
   onCallback: ({
@@ -50,6 +50,8 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
     const { width } = useWindowDimensions();
     const cameraRef = useRef<CameraView>(null);
     const screenHeight = Dimensions.get("screen").height;
+    const [mediaLibraryPermission, requestMediaLibraryPermission] =
+      MediaLibrary.usePermissions(); // 添加相册权限
 
     useEffect(() => {
       if (permission?.granted) {
@@ -65,7 +67,7 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
           await takePictureAndProcess();
         } else {
           // 相机未准备好，开始等待策略
-          Alert.alert("正在等待相机准备...");
+          Alert.alert("Waiting for camera ready...");
 
           let waitTime = 0;
           const interval = 500; // 每0.5秒检查一次
@@ -94,29 +96,44 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
             await takePictureAndProcess();
           } else {
             // 等待超时，显示错误并关闭
-            Alert.alert("相机准备超时", "相机在5秒内未能准备就绪");
+            Alert.alert(
+              "Camera ready timeout",
+              "Camera did not prepare in 5 seconds"
+            );
             closeCamera();
           }
         }
       } catch (error) {
-        Alert.alert("拍照出错", JSON.stringify(error));
         closeCamera();
       }
     };
 
     // 将拍照逻辑抽取为独立函数，便于复用
     const takePictureAndProcess = async () => {
-      const result = await cameraRef.current?.takePictureAsync();
+      try {
+        const result = await cameraRef.current?.takePictureAsync();
+        if (result?.uri) {
+          onCallback({
+            url: result.uri,
+            width: result.width,
+            height: result.height,
+          });
 
-      if (result?.uri) {
-        onCallback({
-          url: result.uri,
-          width: result.width,
-          height: result.height,
-        });
-        setTimeout(() => {
-          closeCamera();
-        }, 100);
+          if (mediaLibraryPermission?.granted) {
+            await MediaLibrary.saveToLibraryAsync(result.uri);
+          } else {
+            Alert.alert(
+              "Permission denied",
+              "Please allow media library access permission to save photos"
+            );
+          }
+
+          setTimeout(() => {
+            closeCamera();
+          }, 100);
+        }
+      } catch (error) {
+        closeCamera();
       }
     };
 
@@ -144,11 +161,12 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
               marginBottom: 30,
             }}
           >
-            授权失效或者授权过期，请允许应用程序允许相机权限以扫描二维码
+            The camera permission has expired or is invalid. Please allow the
+            application to use the camera permission to scan the QR code
           </Text>
 
           <Button icon="camera" mode="contained" onPress={requestPermission}>
-            重新获取相机授权
+            Re-request camera permission
           </Button>
         </View>
       );

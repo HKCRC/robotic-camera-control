@@ -6,7 +6,6 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  Alert,
 } from "react-native";
 
 import { Images } from "@/constants/Image";
@@ -22,6 +21,7 @@ import { SOCKET_URL } from "@/constants";
 import { EVENT_CODE, WebsocketResponseType } from "@/types";
 import { useCameraPermissions } from "expo-camera";
 import { Text as PaperText } from "react-native-paper";
+import * as MediaLibrary from "expo-media-library";
 
 export default function HomeScreen() {
   const { width: screenWidth } = useSafeAreaFrame();
@@ -51,6 +51,9 @@ export default function HomeScreen() {
       height: 0,
     });
   };
+
+  const [mediaLibraryPermission, requestMediaLibraryPermission] =
+    MediaLibrary.usePermissions(); // 添加相册权限
 
   const hideUrlModal = () => {
     setShowUrlModal(false);
@@ -84,7 +87,7 @@ export default function HomeScreen() {
 
     ws.onopen = () => {
       console.log("WebSocket is open");
-      setSnackbarMessage(`连接到 ${socketUrl} 成功`);
+      setSnackbarMessage(`Connect to ${socketUrl} success`);
       setSnackbarVisible(true);
     };
 
@@ -98,7 +101,7 @@ export default function HomeScreen() {
 
     ws.onerror = (error) => {
       console.log("WebSocket error:", error);
-      setSnackbarMessage(`连接到 ${socketUrl} 失败`);
+      setSnackbarMessage(`Connect to ${socketUrl} failed`);
       setSnackbarVisible(true);
     };
 
@@ -119,11 +122,39 @@ export default function HomeScreen() {
             marginBottom: 30,
           }}
         >
-          授权失效或者授权过期，请允许应用程序允许相机权限以扫描二维码
+          The camera permission has expired or is invalid. Please allow the
+          application to use the camera permission to scan the QR code
         </PaperText>
 
         <Button icon="camera" mode="contained" onPress={requestPermission}>
-          重新获取相机授权
+          Re-request camera permission
+        </Button>
+      </View>
+    );
+  }
+
+  if (!mediaLibraryPermission?.granted) {
+    return (
+      <View style={styles.container}>
+        <PaperText
+          variant="titleMedium"
+          style={{
+            textAlign: "center",
+            marginHorizontal: 50,
+            marginTop: 50,
+            marginBottom: 30,
+          }}
+        >
+          The media library permission has expired or is invalid. Please allow
+          the
+        </PaperText>
+
+        <Button
+          icon="folder-image"
+          mode="contained"
+          onPress={requestMediaLibraryPermission}
+        >
+          Request media library permission
         </Button>
       </View>
     );
@@ -181,10 +212,10 @@ export default function HomeScreen() {
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(message));
       } else {
-        console.error("WebSocket 连接未建立");
+        console.error("WebSocket connection not established");
       }
     } catch (error) {
-      console.error("发送图片失败:", error);
+      console.error("Failed to send image:", error);
     }
   };
 
@@ -217,7 +248,7 @@ export default function HomeScreen() {
             onLongPress={() => setShowUrlModal(true)}
             delayLongPress={500}
           >
-            <Image source={Images.HKCRCLogo} style={styles.reactLogo} />
+            <Image source={Images.photo} style={styles.reactLogo} />
           </TouchableOpacity>
 
           {/* Add URL Configuration Modal */}
@@ -229,7 +260,7 @@ export default function HomeScreen() {
             >
               <Card>
                 <Card.Content>
-                  <Text style={styles.modalTitle}>配置 Socket URL</Text>
+                  <Text style={styles.modalTitle}>Configure Socket URL</Text>
                   <TextInput
                     value={tempSocketUrl}
                     onChangeText={setTempSocketUrl}
@@ -237,10 +268,10 @@ export default function HomeScreen() {
                   />
                   <View style={styles.buttonContainer}>
                     <Button mode="outlined" onPress={hideUrlModal}>
-                      取消
+                      Cancel
                     </Button>
                     <Button mode="contained" onPress={handleUpdateSocketUrl}>
-                      确认
+                      Confirm
                     </Button>
                   </View>
                 </Card.Content>
@@ -249,14 +280,6 @@ export default function HomeScreen() {
           </Portal>
 
           <View style={{ marginTop: 80 }}>
-            {/* <Button
-              icon="camera"
-              mode="contained"
-              onPress={() => setShowScanner(true)}
-            >
-              打开相机
-            </Button> */}
-
             <HeartbeatAnimation />
             <Text
               style={{
@@ -266,7 +289,7 @@ export default function HomeScreen() {
                 color: "#08244e",
               }}
             >
-              等待命令下達...
+              Waiting for command...
             </Text>
 
             {photoResult?.url ? (
@@ -313,12 +336,25 @@ export default function HomeScreen() {
             onDismiss={() => setSnackbarVisible(false)}
             duration={3000}
             action={{
-              label: "关闭",
+              label: "Close",
               onPress: () => setSnackbarVisible(false),
             }}
           >
             {snackbarMessage}
           </Snackbar>
+
+          {/* <Button
+            mode="contained"
+            onPress={() => {
+              setShowScanner(true);
+
+              setTimeout(() => {
+                cameraScannerRef.current?.takePhoto();
+              }, 500);
+            }}
+          >
+            Open camera
+          </Button> */}
         </View>
       )}
     </View>
@@ -336,8 +372,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   reactLogo: {
-    height: 80,
-    width: 240,
+    height: 120,
+    width: 120,
   },
   closeBtn: {
     position: "absolute",
