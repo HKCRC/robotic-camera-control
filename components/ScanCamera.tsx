@@ -21,6 +21,9 @@ import { Button, Text } from "react-native-paper";
 import { Images } from "@/constants/Image";
 import { Image } from "react-native";
 import * as MediaLibrary from "expo-media-library";
+import * as FileSystem from "expo-file-system";
+import * as ImageManipulator from "expo-image-manipulator";
+
 interface CameraScannerProps {
   onClose: () => void;
   onCallback: ({
@@ -112,12 +115,54 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
     const takePictureAndProcess = async () => {
       try {
         const result = await cameraRef.current?.takePictureAsync();
+
         if (result?.uri) {
-          onCallback({
-            url: result.uri,
-            width: result.width,
-            height: result.height,
-          });
+          const fileInfo = await FileSystem.getInfoAsync(result.uri);
+          if (fileInfo.exists) {
+            let compressionQuality = 0.98;
+            const maxSizeMB = 3; // 目标最大大小，例如1MB
+
+            if (fileInfo.size > maxSizeMB * 1024 * 1024) {
+              compressionQuality = Math.min(
+                2.5,
+                (maxSizeMB * 1024 * 1024) / fileInfo.size
+              );
+
+              const maxWidth = 6000; // 最大宽度
+              const resizeAction =
+                result.width > maxWidth
+                  ? [{ resize: { width: maxWidth } }]
+                  : [];
+
+              // 压缩图片
+              const manipulatedImage = await ImageManipulator.manipulateAsync(
+                result.uri,
+                resizeAction,
+                {
+                  compress: compressionQuality,
+                  format: ImageManipulator.SaveFormat.JPEG,
+                }
+              );
+
+              // 检查压缩后的大小
+              const compressedFileInfo = await FileSystem.getInfoAsync(
+                manipulatedImage.uri
+              );
+              if (compressedFileInfo.exists) {
+                console.log(
+                  `压缩后图片大小: ${compressedFileInfo.size / 1024 / 1024} MB`
+                );
+
+                console.log(`原始图片大小: ${fileInfo.size / 1024 / 1024} MB`);
+
+                onCallback({
+                  url: manipulatedImage.uri,
+                  width: manipulatedImage.width,
+                  height: manipulatedImage.height,
+                });
+              }
+            }
+          }
 
           if (mediaLibraryPermission?.granted) {
             await MediaLibrary.saveToLibraryAsync(result.uri);

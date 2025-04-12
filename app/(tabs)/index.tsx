@@ -97,11 +97,13 @@ export default function HomeScreen() {
 
     ws.onclose = () => {
       console.log("WebSocket is closed");
+      setSnackbarMessage(`Connect to ${socketUrl} closed`);
+      setSnackbarVisible(true);
     };
 
     ws.onerror = (error) => {
       console.log("WebSocket error:", error);
-      setSnackbarMessage(`Connect to ${socketUrl} failed`);
+      setSnackbarMessage(`Connect to ${socketUrl} error`);
       setSnackbarVisible(true);
     };
 

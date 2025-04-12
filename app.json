@@ -2,7 +2,7 @@
   "expo": {
     "name": "robotic-control",
     "slug": "roboticcontrolapp",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "roboticcontrolapp",
@@ -17,9 +17,15 @@
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
       ],
-      "package": "com.hkcrc.roboticcontrolapp"
+     "package": "com.hkcrc.roboticcontrolapp",
+     "usesCleartextTraffic": true,
+      "networkSecurityConfig": {
+        "cleartextTraffic": true
+      }
     },
     "web": {
       "bundler": "metro",
