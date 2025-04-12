@@ -120,7 +120,7 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
           const fileInfo = await FileSystem.getInfoAsync(result.uri);
           if (fileInfo.exists) {
             let compressionQuality = 0.98;
-            const maxSizeMB = 3; // 目标最大大小，例如1MB
+            const maxSizeMB = 4; // 目标最大大小，例如1MB
 
             if (fileInfo.size > maxSizeMB * 1024 * 1024) {
               compressionQuality = Math.min(
@@ -128,7 +128,7 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
                 (maxSizeMB * 1024 * 1024) / fileInfo.size
               );
 
-              const maxWidth = 6000; // 最大宽度
+              const maxWidth = 4096; // 最大宽度
               const resizeAction =
                 result.width > maxWidth
                   ? [{ resize: { width: maxWidth } }]

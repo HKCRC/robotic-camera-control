@@ -22,6 +22,7 @@ import { EVENT_CODE, WebsocketResponseType } from "@/types";
 import { useCameraPermissions } from "expo-camera";
 import { Text as PaperText } from "react-native-paper";
 import * as MediaLibrary from "expo-media-library";
+import WebSocket from "isomorphic-ws";
 
 export default function HomeScreen() {
   const { width: screenWidth } = useSafeAreaFrame();
@@ -91,7 +92,7 @@ export default function HomeScreen() {
       setSnackbarVisible(true);
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = (event: WebSocket.MessageEvent) => {
       webSocketMsgHandle(event.data);
     };
 
@@ -101,7 +102,7 @@ export default function HomeScreen() {
       setSnackbarVisible(true);
     };
 
-    ws.onerror = (error) => {
+    ws.onerror = (error: WebSocket.ErrorEvent) => {
       console.log("WebSocket error:", error);
       setSnackbarMessage(`Connect to ${socketUrl} error`);
       setSnackbarVisible(true);
@@ -345,7 +346,7 @@ export default function HomeScreen() {
             {snackbarMessage}
           </Snackbar>
 
-          {/* <Button
+          <Button
             mode="contained"
             onPress={() => {
               setShowScanner(true);
@@ -356,7 +357,7 @@ export default function HomeScreen() {
             }}
           >
             Open camera
-          </Button> */}
+          </Button>
         </View>
       )}
     </View>
