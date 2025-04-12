@@ -346,7 +346,7 @@ export default function HomeScreen() {
             {snackbarMessage}
           </Snackbar>
 
-          <Button
+          {/* <Button
             mode="contained"
             onPress={() => {
               setShowScanner(true);
@@ -357,7 +357,7 @@ export default function HomeScreen() {
             }}
           >
             Open camera
-          </Button>
+          </Button> */}
         </View>
       )}
     </View>
