@@ -10,7 +10,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { PaperProvider } from "react-native-paper";
 import "react-native-reanimated";
-
+import { useKeepAwake } from "expo-keep-awake";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import HomeScreen from "./(tabs)";
 
@@ -22,6 +22,8 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+
+  useKeepAwake();
 
   useEffect(() => {
     if (loaded) {

@@ -44,6 +44,7 @@ export default function HomeScreen() {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [permission, requestPermission] = useCameraPermissions();
+  const [countdown, setCountdown] = useState(0);
   const hideModal = () => {
     setVisible(false);
     setPhotoResult({
@@ -172,16 +173,29 @@ export default function HomeScreen() {
       }
 
       if (data.type === EVENT_CODE.TAKE_PHOTO) {
-        setShowScanner(true);
-
-        setTimeout(() => {
-          cameraScannerRef.current?.takePhoto();
-        }, 500);
+        toTakePhotoAction();
         return;
       }
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const toTakePhotoAction = async () => {
+    let count = 5;
+    setCountdown(count);
+
+    while (count > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      count--;
+      if (count <= 1) {
+        setShowScanner(true);
+      }
+      setCountdown(count);
+    }
+    setTimeout(() => {
+      cameraScannerRef.current?.takePhoto();
+    }, 20);
   };
 
   const cameraCloseEventCall = () => {
@@ -283,7 +297,27 @@ export default function HomeScreen() {
           </Portal>
 
           <View style={{ marginTop: 80 }}>
-            <HeartbeatAnimation />
+            <View className="relative">
+              <HeartbeatAnimation />
+              {countdown > 0 ? (
+                <Text
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    fontSize: 40,
+                    fontWeight: "bold",
+                    color: "white",
+                    transform: [
+                      { translateX: screenWidth / 3.4 },
+                      { translateY: 50 },
+                    ],
+                  }}
+                >
+                  {countdown}
+                </Text>
+              ) : null}
+            </View>
             <Text
               style={{
                 marginTop: 50,
@@ -334,6 +368,7 @@ export default function HomeScreen() {
               </Portal>
             ) : null}
           </View>
+
           <Snackbar
             visible={snackbarVisible}
             onDismiss={() => setSnackbarVisible(false)}
@@ -349,11 +384,7 @@ export default function HomeScreen() {
           {/* <Button
             mode="contained"
             onPress={() => {
-              setShowScanner(true);
-
-              setTimeout(() => {
-                cameraScannerRef.current?.takePhoto();
-              }, 500);
+              toTakePhotoAction();
             }}
           >
             Open camera

@@ -66,7 +66,6 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
     const takePhoto = async () => {
       try {
         if (isCameraReady) {
-          // 相机已经准备好，直接拍照
           await takePictureAndProcess();
         } else {
           // 相机未准备好，开始等待策略
@@ -74,7 +73,7 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
 
           let waitTime = 0;
           const interval = 500; // 每0.5秒检查一次
-          const maxWaitTime = 5000; // 最多等待5秒
+          const maxWaitTime = 10000; // 最多等待5秒
 
           const waitForCamera = new Promise<boolean>((resolve) => {
             const checkInterval = setInterval(() => {
@@ -120,7 +119,7 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
           const fileInfo = await FileSystem.getInfoAsync(result.uri);
           if (fileInfo.exists) {
             let compressionQuality = 0.98;
-            const maxSizeMB = 4; // 目标最大大小，例如1MB
+            const maxSizeMB = 3; // 目标最大大小，例如1MB
 
             if (fileInfo.size > maxSizeMB * 1024 * 1024) {
               compressionQuality = Math.min(
@@ -163,6 +162,12 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
               }
             }
           }
+
+          onCallback({
+            url: result.uri,
+            width: result.width,
+            height: result.height,
+          });
 
           if (mediaLibraryPermission?.granted) {
             await MediaLibrary.saveToLibraryAsync(result.uri);
@@ -236,6 +241,7 @@ export default forwardRef<CameraScannerRef, CameraScannerProps>(
               onCameraReady={() => {
                 setIsCameraReady(true);
               }}
+              facing="front"
               animateShutter={true}
               autofocus="on"
               style={[
