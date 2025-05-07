@@ -32,6 +32,8 @@ export default function HomeScreen() {
     url: "",
     width: 0,
     height: 0,
+    resultUri: "",
+    ip: "",
   });
 
   const [ws, setWs] = useState<WebSocket | null>(null);
@@ -51,6 +53,8 @@ export default function HomeScreen() {
       url: "",
       width: 0,
       height: 0,
+      resultUri: "",
+      ip: "",
     });
   };
 
@@ -207,6 +211,8 @@ export default function HomeScreen() {
     url: string;
     width: number;
     height: number;
+    resultUri: string;
+    ip: string;
   }) => {
     setPhotoResult(result);
 
@@ -222,11 +228,14 @@ export default function HomeScreen() {
           width: result.width,
           height: result.height,
           image: await blobToBase64(blob),
+          resultUri: result.resultUri,
+          ip: result.ip,
         },
       };
 
       // 通过 WebSocket 发送消息
       if (ws && ws.readyState === WebSocket.OPEN) {
+        console.error(message);
         ws.send(JSON.stringify(message));
       } else {
         console.error("WebSocket connection not established");
@@ -280,8 +289,12 @@ export default function HomeScreen() {
                   <Text style={styles.modalTitle}>Configure Socket URL</Text>
                   <TextInput
                     value={tempSocketUrl}
-                    onChangeText={setTempSocketUrl}
+                    onChangeText={(text) => setTempSocketUrl(text)}
                     style={styles.input}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="url"
+                    textContentType="URL"
                   />
                   <View style={styles.buttonContainer}>
                     <Button mode="outlined" onPress={hideUrlModal}>
