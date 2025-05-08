@@ -69,6 +69,7 @@ export default function HomeScreen() {
   const handleUpdateSocketUrl = () => {
     setSocketUrl(tempSocketUrl);
     setShowUrlModal(false);
+    connectWebSocket(tempSocketUrl);
   };
 
   const calculateImageDimensions = () => {
@@ -87,7 +88,11 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    const ws = new WebSocket(socketUrl);
+    connectWebSocket();
+  }, [socketUrl]);
+
+  const connectWebSocket = (socketUrlNew?: string) => {
+    const ws = new WebSocket(socketUrlNew || socketUrl);
     ws.binaryType = "blob";
     setWs(ws);
 
@@ -116,7 +121,7 @@ export default function HomeScreen() {
     return () => {
       ws.close();
     };
-  }, [socketUrl]);
+  };
 
   if (!permission?.granted) {
     return (
@@ -235,7 +240,6 @@ export default function HomeScreen() {
 
       // 通过 WebSocket 发送消息
       if (ws && ws.readyState === WebSocket.OPEN) {
-        console.error(message);
         ws.send(JSON.stringify(message));
       } else {
         console.error("WebSocket connection not established");
@@ -394,14 +398,14 @@ export default function HomeScreen() {
             {snackbarMessage}
           </Snackbar>
 
-          {/* <Button
+          <Button
             mode="contained"
             onPress={() => {
               toTakePhotoAction();
             }}
           >
             Open camera
-          </Button> */}
+          </Button>
         </View>
       )}
     </View>
