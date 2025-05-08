@@ -398,14 +398,14 @@ export default function HomeScreen() {
             {snackbarMessage}
           </Snackbar>
 
-          <Button
+          {/* <Button
             mode="contained"
             onPress={() => {
               toTakePhotoAction();
             }}
           >
             Open camera
-          </Button>
+          </Button> */}
         </View>
       )}
     </View>
