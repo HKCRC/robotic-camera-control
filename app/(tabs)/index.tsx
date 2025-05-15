@@ -5,7 +5,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
 } from "react-native";
 
 import { Images } from "@/constants/Image";
@@ -13,16 +12,24 @@ import {
   useSafeAreaFrame,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { Button, Card, Modal, Portal, Snackbar } from "react-native-paper";
+import {
+  Button,
+  Card,
+  Modal,
+  Portal,
+  Snackbar,
+  TextInput,
+} from "react-native-paper";
 import { useEffect, useRef, useState } from "react";
 import CameraScanner, { CameraScannerRef } from "@/components/ScanCamera";
 import HeartbeatAnimation from "@/components/HeartbeatAnimation";
-import { SOCKET_URL } from "@/constants";
+import { SOCKET_URL, STORAGE_KEY } from "@/constants";
 import { EVENT_CODE, WebsocketResponseType } from "@/types";
 import { useCameraPermissions } from "expo-camera";
 import { Text as PaperText } from "react-native-paper";
 import * as MediaLibrary from "expo-media-library";
 import WebSocket from "isomorphic-ws";
+import storage from "@react-native-async-storage/async-storage";
 
 export default function HomeScreen() {
   const { width: screenWidth } = useSafeAreaFrame();
@@ -42,11 +49,14 @@ export default function HomeScreen() {
   const screenHeight = Dimensions.get("screen").height - (top + bottom);
   const [visible, setVisible] = useState(false);
   const [showUrlModal, setShowUrlModal] = useState(false);
-  const [tempSocketUrl, setTempSocketUrl] = useState(socketUrl);
+
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [permission, requestPermission] = useCameraPermissions();
   const [countdown, setCountdown] = useState(0);
+  const [shouldShowPhoto, setShouldShowPhoto] = useState(false);
+  const tempSocketUrl = useRef(socketUrl);
+
   const hideModal = () => {
     setVisible(false);
     setPhotoResult({
@@ -58,18 +68,38 @@ export default function HomeScreen() {
     });
   };
 
+  useEffect(() => {
+    getSokcetFromStorage();
+  }, []);
+
+  const getSokcetFromStorage = async () => {
+    const socketUrlFromStorage = await storage.getItem(STORAGE_KEY);
+    console.log("socketUrlFromStorage", socketUrlFromStorage);
+    if (socketUrlFromStorage) {
+      setSocketUrl(socketUrlFromStorage);
+      connectWebSocket(socketUrlFromStorage);
+    } else {
+      connectWebSocket(socketUrl);
+    }
+  };
+
+  const setSocketToStorage = async (url: string) => {
+    await storage.setItem(STORAGE_KEY, url);
+  };
+
   const [mediaLibraryPermission, requestMediaLibraryPermission] =
     MediaLibrary.usePermissions(); // 添加相册权限
 
   const hideUrlModal = () => {
     setShowUrlModal(false);
-    setTempSocketUrl(socketUrl); // Reset to current socket URL
+    tempSocketUrl.current = socketUrl; // Reset to current socket URL
   };
 
   const handleUpdateSocketUrl = () => {
-    setSocketUrl(tempSocketUrl);
+    setSocketUrl(tempSocketUrl.current);
     setShowUrlModal(false);
-    connectWebSocket(tempSocketUrl);
+    setSocketToStorage(tempSocketUrl.current);
+    connectWebSocket(tempSocketUrl.current);
   };
 
   const calculateImageDimensions = () => {
@@ -87,10 +117,6 @@ export default function HomeScreen() {
     };
   };
 
-  useEffect(() => {
-    connectWebSocket();
-  }, [socketUrl]);
-
   const connectWebSocket = (socketUrlNew?: string) => {
     const ws = new WebSocket(socketUrlNew || socketUrl);
     ws.binaryType = "blob";
@@ -98,7 +124,7 @@ export default function HomeScreen() {
 
     ws.onopen = () => {
       console.log("WebSocket is open");
-      setSnackbarMessage(`Connect to ${socketUrl} success`);
+      setSnackbarMessage(`Connect to ${socketUrlNew || socketUrl} success`);
       setSnackbarVisible(true);
     };
 
@@ -108,13 +134,13 @@ export default function HomeScreen() {
 
     ws.onclose = () => {
       console.log("WebSocket is closed");
-      setSnackbarMessage(`Connect to ${socketUrl} closed`);
+      setSnackbarMessage(`Connect to ${socketUrlNew || socketUrl} closed`);
       setSnackbarVisible(true);
     };
 
     ws.onerror = (error: WebSocket.ErrorEvent) => {
       console.log("WebSocket error:", error);
-      setSnackbarMessage(`Connect to ${socketUrl} error`);
+      setSnackbarMessage(`Connect to ${socketUrlNew || socketUrl} error`);
       setSnackbarVisible(true);
     };
 
@@ -193,7 +219,8 @@ export default function HomeScreen() {
   const toTakePhotoAction = async () => {
     let count = 5;
     setCountdown(count);
-
+    // 开始倒计时，不显示图片
+    setShouldShowPhoto(false);
     while (count > 0) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       count--;
@@ -220,7 +247,7 @@ export default function HomeScreen() {
     ip: string;
   }) => {
     setPhotoResult(result);
-
+    setShouldShowPhoto(true);
     try {
       // 获取图片的 blob 数据
       const response = await fetch(result.url);
@@ -263,7 +290,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       {showScanner ? (
         <CameraScanner
           onCallback={cameraTakePhotoEventCall}
@@ -292,8 +319,11 @@ export default function HomeScreen() {
                 <Card.Content>
                   <Text style={styles.modalTitle}>Configure Socket URL</Text>
                   <TextInput
-                    value={tempSocketUrl}
-                    onChangeText={(text) => setTempSocketUrl(text)}
+                    defaultValue={socketUrl}
+                    onChangeText={(text) => {
+                      setSocketUrl(text);
+                      tempSocketUrl.current = text;
+                    }}
                     style={styles.input}
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -346,7 +376,7 @@ export default function HomeScreen() {
               Waiting for command...
             </Text>
 
-            {photoResult?.url ? (
+            {photoResult?.url && shouldShowPhoto ? (
               <Portal>
                 <Modal
                   visible={visible}
@@ -408,6 +438,20 @@ export default function HomeScreen() {
           </Button> */}
         </View>
       )}
+
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        <Image source={Images.logo} style={styles.logo} resizeMode="contain" />
+      </View>
     </View>
   );
 }
@@ -457,5 +501,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 8,
+  },
+  logo: {
+    height: 120,
+    width: 68,
   },
 });
